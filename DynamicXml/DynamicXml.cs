@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
@@ -7,48 +6,58 @@ using System.Xml.Linq;
 
 namespace DynamicXml
 {
+    public class DynamicXmlOptions
+    {
+        public static DynamicXmlOptions Default { get; set; } = new DynamicXmlOptions();
+
+        public string TextFieldName { get; set; } = "_text";
+        public bool ThrowOnGet { get; set; } = true;
+    }
+
     public class DynamicXml :
         DynamicObject
     {
         private readonly XContainer _root;
+        private readonly DynamicXmlOptions _options;
 
-        private DynamicXml(
-            XContainer root)
+        public DynamicXml(
+            XContainer root,
+            DynamicXmlOptions options = null)
         {
             _root = root;
+            _options = options ?? DynamicXmlOptions.Default;
         }
 
-        public static DynamicXml Parse(
-            string text)
+        public static dynamic Parse(
+            string text,
+            DynamicXmlOptions options = null)
         {
-            return new DynamicXml(XDocument.Parse(text));
+            return new DynamicXml(XDocument.Parse(text), options);
         }
 
-        public static DynamicXml Load(
-            TextReader reader)
+        public static dynamic Load(
+            TextReader reader,
+            DynamicXmlOptions options = null)
         {
-            return new DynamicXml(XDocument.Load(reader));
+            return new DynamicXml(XDocument.Load(reader), options);
         }
 
-        public static DynamicXml Load(
-            Stream stream)
+        public static dynamic Load(
+            Stream stream,
+            DynamicXmlOptions options = null)
         {
-            return new DynamicXml(XDocument.Load(stream));
+            return new DynamicXml(XDocument.Load(stream), options);
         }
 
-        public static DynamicXml Load(
-            string filename)
+        public static dynamic Load(
+            string filename,
+            DynamicXmlOptions options)
         {
-            return new DynamicXml(XDocument.Load(filename));
+            return new DynamicXml(XDocument.Load(filename), options);
         }
 
         public override IEnumerable<string> GetDynamicMemberNames()
         {
-            foreach (var name in _root.Elements().Select(s => s.Name.LocalName).Distinct())
-            {
-                yield return name;
-            }
-
             if (_root is XElement e)
             {
                 var attributes = e.Attributes().Where(w => !w.IsNamespaceDeclaration);
@@ -64,9 +73,14 @@ namespace DynamicXml
 
                     if (!e.IsEmpty && !e.HasElements)
                     {
-                        yield return "@text";
+                        yield return _options.TextFieldName;
                     }
                 }
+            }
+
+            foreach (var name in _root.Elements().Select(s => s.Name.LocalName).Distinct())
+            {
+                yield return name;
             }
         }
 
@@ -78,7 +92,7 @@ namespace DynamicXml
 
             if (_root is XElement e)
             {
-                if (binder.Name == "@text")
+                if (binder.Name == _options.TextFieldName)
                 {
                     result = e.Value;
 
@@ -99,7 +113,7 @@ namespace DynamicXml
 
             if (nodes.Count() > 1)
             {
-                result = nodes.Select(n => n.HasElements ? (object)new DynamicXml(n) : n.Value).ToList();
+                result = nodes.Select(n => n.HasElements ? (object)new DynamicXml(n, _options) : n.Value).ToList();
 
                 return true;
             }
@@ -108,12 +122,12 @@ namespace DynamicXml
 
             if (node != null)
             {
-                result = node.HasElements || node.Attributes().Any(a => !a.IsNamespaceDeclaration) ? (object)new DynamicXml(node) : node.Value;
+                result = node.HasElements || node.Attributes().Any(a => !a.IsNamespaceDeclaration) ? (object)new DynamicXml(node, _options) : node.Value;
 
                 return true;
             }
 
-            return false;
+            return !_options.ThrowOnGet;
         }
     }
 }
