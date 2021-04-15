@@ -2,7 +2,7 @@
 
 namespace DynamicXml
 {
-    public static class XDocumentoExtensions
+    public static class XNodeExtensions
     {
         public static dynamic ToDynamic(
             this XContainer xContainer)
