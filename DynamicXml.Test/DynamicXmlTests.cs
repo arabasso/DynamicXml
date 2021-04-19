@@ -1,7 +1,13 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
 using NUnit.Framework;
+
+[assembly: InternalsVisibleTo("System.Linq")]
 
 namespace DynamicXml.Test
 {
@@ -81,6 +87,26 @@ namespace DynamicXml.Test
             var xDocument = XDocument.Parse(text).Root.ToDynamic();
 
             Assert.That(xDocument, Is.Not.Null);
+        }
+
+        [TestCase("<a><b>Teste</b><b>Teste</b></a>")]
+        [TestCase("<a><b>Teste</b></a>")]
+        public void Test_enumerable_cast(
+            string text)
+        {
+            var xDocument = XDocument.Parse(text).ToDynamic();
+
+            Assert.That(xDocument.a.AsEnumerable("b"), Is.InstanceOf<IEnumerable>());
+        }
+
+        [TestCase("<a><b>Teste</b><b>Teste</b></a>", ExpectedResult = 2)]
+        [TestCase("<a><b>Teste</b></a>", ExpectedResult = 1)]
+        public int Test_enumerable_count(
+            string text)
+        {
+            var xDocument = XDocument.Parse(text).ToDynamic();
+
+            return ((IEnumerable<object>)xDocument.a.AsEnumerable("b")).Count();
         }
     }
 }

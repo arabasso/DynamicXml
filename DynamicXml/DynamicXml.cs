@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
@@ -84,6 +85,14 @@ namespace DynamicXml
             }
         }
 
+        public IEnumerable AsEnumerable(
+            string name)
+        {
+            var nodes = _root.Elements().Where(w => w.Name.LocalName == name);
+
+            return nodes.Select(n => n.HasElements ? (object) new DynamicXml(n, _options) : n.Value);
+        }
+
         public override bool TryGetMember(
             GetMemberBinder binder,
             out object result)
@@ -113,7 +122,7 @@ namespace DynamicXml
 
             if (nodes.Count() > 1)
             {
-                result = nodes.Select(n => n.HasElements ? (object)new DynamicXml(n, _options) : n.Value).ToList();
+                result = nodes.Select(n => n.HasElements ? (object)new DynamicXml(n, _options) : n.Value);
 
                 return true;
             }
