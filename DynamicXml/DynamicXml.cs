@@ -122,7 +122,7 @@ namespace DynamicXml
 
             if (nodes.Count() > 1)
             {
-                result = nodes.Select(n => n.HasElements ? (object)new DynamicXml(n, _options) : n.Value);
+                result = AsEnumerable(binder.Name);
 
                 return true;
             }
